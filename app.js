@@ -1,9 +1,15 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
+const app = express();
+const mongoose = require('mongoose');
 dotenv.config();
 
-const app = express();
+app.use(express.json());
+mongoose.connect(process.env.URL_DATABASE)
+.then(() => console.log('Connexion à MongoDB réussie !'))
+.catch((error) => console.log(`${error}`));
+
 
 app.use('/images', express.static(`${__dirname}/public/images`));
 
@@ -16,17 +22,14 @@ app.use((req, res, next) => {
 
 app.use(morgan('dev'));
 
-app.get('/', (req, res,) => {
-    res.status(200).sendFile(`${__dirname}/index.html`);
-});
+const homeRoutes = require('./routes/home');
+app.use(homeRoutes); 
 
-app.get('/contact', (req, res) => {
-    res.status(200).sendFile(`${__dirname}/pages/contact.html`);
-});
+const contactRoutes = require('./routes/contact');
+app.use(contactRoutes);
 
-app.use((req, res) => {
-    res.status(404).sendFile(`${__dirname}/pages/error.html`);
-});
+const errorRoutes = require('./routes/error');
+app.use(errorRoutes);
 
 app.listen((process.env.PORT || 3000), () => {
     console.log(`Le serveur est disponible à l'adresse :
