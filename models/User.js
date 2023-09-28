@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-
 const AddressUser = require('./AddressUser');
+
 const userSchema = mongoose.schema({
     lastname: { type: String, required: true, trim: true },
     firstname: { type: String, required: true, trim: true },
