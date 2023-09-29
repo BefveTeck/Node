@@ -2,7 +2,7 @@ const AddressUser = require("../models/AddressUser");
 const User = require("../models/User");
 const { body, validationResult } = require("express-validator");
 
-const verifinputs = (req, res) => {
+const verifInputs = (req, res) => {
   body("lastname", "le nom est obligatoire").isstring().notempty();
   body("firstname", "Le prénom est obligatoire").isstring().notempty();
   body("email", "L'email est obligatoire").isEmail().notempty();
@@ -63,6 +63,10 @@ const newUser = async (idAddress, req, res) => {
       res.status(500).json({ error: error });
     });
 };
+
+exports.addUser =(req,res) => {
+
+}
 
 exports.createUser = (req, res) => {
   try {
