@@ -1,6 +1,7 @@
 const AddressUser = require("../models/AddressUser");
 const User = require("../models/User");
 const { body, validationResult } = require("express-validator");
+const path = require('path');
 
 const verifInputs = (req, res) => {
   body("lastname", "le nom est obligatoire").isstring().notempty();
@@ -28,7 +29,7 @@ const findUserByMail = async (req) => {
 };
 
 const findAdress = async (req) => {
-  return await AdressUser.findOne({
+  return await AddressUser.findOne({
     street: req.body.street,
     zipcode: req.body.zipcode,
     city: req.body.city,
@@ -65,7 +66,7 @@ const newUser = async (idAddress, req, res) => {
 };
 
 exports.addUser =(req,res) => {
-
+    res.status(200).render(path.join(__dirname, '../pages/management/users/create-users.ejs'))
 }
 
 exports.createUser = (req, res) => {
@@ -102,9 +103,22 @@ exports.createUser = (req, res) => {
   }
 };
 
-exports.getUsers = () => {};
+exports.getUsers = (req, res) => {
+  res.status(200).render(path.join(__dirname, "../pages/management/users/list-users.ejs"))
+};
+
 exports.getUserById = () => {};
+
+exports.modifyUser = (req, res) => {
+  res.status(200).render(path.join(__dirname, "../pages/management/users/update-users.ejs"))
+};
+
 exports.updateUser = () => {};
+
+exports.removeUser = (req, res) => {
+  res.status(200).render(path.join(__dirname, "../pages/management/users/delete-users.ejs"))
+};
+
 exports.deleteUser = () => {};
 
 // équivaut a

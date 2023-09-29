@@ -28,6 +28,15 @@ app.use(homeRoutes);
 const contactRoutes = require('./routes/contact');
 app.use(contactRoutes);
 
+const userRoutes = require('./routes/user');
+app.use(userRoutes);
+
+const adminRoutes = require('./routes/admin');
+app.use(adminRoutes);
+
+const signRoutes = require('./routes/sign');
+app.use(signRoutes);
+
 const errorRoutes = require('./routes/error');
 app.use(errorRoutes);
 
