@@ -6,6 +6,8 @@ const mongoose = require('mongoose');
 dotenv.config();
 
 app.use(express.json());
+app.use(express.urlencoded({extended: true }));
+
 mongoose.connect(process.env.URL_DATABASE)
 .then(() => console.log('Connexion à MongoDB réussie !'))
 .catch((error) => console.log(`${error}`));

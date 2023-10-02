@@ -2,19 +2,16 @@ const AddressUser = require("../models/AddressUser");
 const User = require("../models/User");
 const { body, validationResult } = require("express-validator");
 const path = require('path');
+const bcrypt = require('bcrypt');
 
 const verifInputs = (req, res) => {
-  body("lastname", "le nom est obligatoire").isstring().notempty();
-  body("firstname", "Le prénom est obligatoire").isstring().notempty();
-  body("email", "L'email est obligatoire").isEmail().notempty();
-  body("password", "Le mot de passe est obligatoire").isString().notempty();
-  body("passwordConfirm", "La confirmation du mote de passe est obligatoire")
-    .isString()
-    .notempty();
-  body("street", "Le numéroe est nom de voie est obligatoire")
-    .isString()
-    .notempty();
-  body("zipcode", "Le code postale est obligatoire").isPostalCode().notEmpty();
+  body("lastname", "le nom est obligatoire").isString().notEmpty();
+  body("firstname", "Le prénom est obligatoire").isString().notEmpty();
+  body("email", "L'email est obligatoire").isEmail().notEmpty();
+  body("password", "Le mot de passe est obligatoire").isString().notEmpty();
+  body("confirm", "La confirmation du mote de passe est obligatoire").isString().notEmpty();
+  body("street", "Le numéro et nom de voie est obligatoire").isString().notEmpty();
+  body("zipcode", "Le code postale est obligatoire").isPostalCode("FR").notEmpty();
   body("city", "La ville est obligatoire").isString().notEmpty();
 
   const errors = validationResult(req);
@@ -28,7 +25,7 @@ const findUserByMail = async (req) => {
   return await User.findOne({ email: req.body.email });
 };
 
-const findAdress = async (req) => {
+const findAddress = async (req) => {
   return await AddressUser.findOne({
     street: req.body.street,
     zipcode: req.body.zipcode,
@@ -36,11 +33,11 @@ const findAdress = async (req) => {
   });
 };
 
-const createAdress = async (req) => {
-  const newAdress = new AdressUser({
+const createAddress = async (req) => {
+  const newAdress = new AddressUser({
     street: req.body.street,
     zipcode: req.body.zipcode,
-    city: req.body.city,
+    city: req.body.city
   });
   return await newAdress.save();
 };
@@ -76,32 +73,37 @@ exports.createUser = (req, res) => {
     findUserByMail(req)
       .then((user) => {
         if (user) {
-          return res.status(409).json({ message: "User already exists" });
+          return res.status(409).json({ message: "user already exists" });
         } else {
-          findAdress(req)
+          findAddress(req)
             .then((address) => {
-              if (adress) {
-                newUser(adress._id, req, res);
+              if (address) {
+                newUser(address.id, req, res);
               } else {
-                createAdress(req)
-                  .then((result) => {})
-                  .catch((error) => {});
+                createAddress(req)
+                  .then((result) => {
+                    newUser(result.id, req, res);
+                  })
+                  .catch((error) => {
+                    console.log("Erreur createAddress", error);
+                  });
               }
             })
             .catch((error) => {
-              console.log("Erreur findAdress", error);
+              console.log("Erreur,findAddress", error);
               res.status(500).json({ error: error });
             });
         }
       })
       .catch((error) => {
-        console.log("findUser", error);
+        console.log("Erreur,findUserByMail", error);
         res.status(500).json({ error: error });
       });
   } catch (error) {
-    console.log("try error:", error);
+    console.log("try error", error);
   }
-};
+}; 
+
 
 exports.getUsers = (req, res) => {
   res.status(200).render(path.join(__dirname, "../pages/management/users/list-users.ejs"))
