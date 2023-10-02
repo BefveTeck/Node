@@ -7,6 +7,11 @@
     <title>Create user</title>
 </head>
 <body>
+    <% if (successCreateUser) { %>
+        <div role="alert">
+        <%= successCreateUser %>
+        </div>
+        <% } %>
     <%- include('../../components/header.ejs')  %>
     <h1>Creation d'un utilisateur</h1>
     <form action="/users/create/add" method="POST">

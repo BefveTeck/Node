@@ -3,10 +3,16 @@ const dotenv = require('dotenv');
 const morgan = require('morgan');
 const app = express();
 const mongoose = require('mongoose');
+const session = require('express-session');
 dotenv.config();
 
 app.use(express.json());
 app.use(express.urlencoded({extended: true }));
+app.use(session({
+    secret: process.env.SECRET_KEY,
+    resave: false,
+    saveUninitialized: false
+    }))
 
 mongoose.connect(process.env.URL_DATABASE)
 .then(() => console.log('Connexion à MongoDB réussie !'))
