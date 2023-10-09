@@ -6,9 +6,9 @@
     <title>Document</title>
 </head>
 <body>
-    <%- include('../pages/components/header.ejs')  %>
+    <%- include('../components/header.ejs')  %>
     <h1>Connexion</h1>
-       <form action="">
+       <form action="/signin/login" method="POST">
         <div>
             <label for="email">Email</label>
             <input type="text" id="email" name="email">

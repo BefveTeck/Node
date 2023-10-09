@@ -1,52 +1,14 @@
-const AddressUser = require("../models/AddressUser");
 const User = require("../models/User");
-const { body, validationResult } = require("express-validator");
 const path = require("path");
 const bcrypt = require("bcrypt");
+const verifInputs = require('../middlewares/verifinputs')
+const findUserByMail = require('../middlewares/findUserByMail');
+const findAddress = require('../middlewares/findAddress');
+const createAddress = require('../middlewares/createAddress');
 
-const verifInputs = (req, res) => {
-  body("lastname", "le nom est obligatoire").isString().notEmpty();
-  body("firstname", "Le prénom est obligatoire").isString().notEmpty();
-  body("email", "L'email est obligatoire").isEmail().notEmpty();
-  body("password", "Le mot de passe est obligatoire").isString().notEmpty();
-  body("confirm", "La confirmation du mote de passe est obligatoire")
-    .isString()
-    .notEmpty();
-  body("street", "Le numéro et nom de voie est obligatoire")
-    .isString()
-    .notEmpty();
-  body("zipcode", "Le code postale est obligatoire")
-    .isPostalCode("FR")
-    .notEmpty();
-  body("city", "La ville est obligatoire").isString().notEmpty();
-
-  const errors = validationResult(req);
-
-  if (!errors.isEmpty()) {
-    return res.status(422).json({ errors: errors.array() });
+const findUserById = async (id) => {
+  return await User.findOne({ _id: id })
   }
-};
-
-const findUserByMail = async (req) => {
-  return await User.findOne({ email: req.body.email });
-};
-
-const findAddress = async (req) => {
-  return await AddressUser.findOne({
-    street: req.body.street,
-    zipcode: req.body.zipcode,
-    city: req.body.city,
-  });
-};
-
-const createAddress = async (req) => {
-  const newAdress = new AddressUser({
-    street: req.body.street,
-    zipcode: req.body.zipcode,
-    city: req.body.city,
-  });
-  return await newAdress.save();
-};
 
 const newUser = async (idAddress, req, res) => {
   const hash = await bcrypt.hash(req.body.password, 10);
@@ -68,7 +30,26 @@ const newUser = async (idAddress, req, res) => {
   });
 };
 
-  exports.getUserById = async (req, res, next) => {
+const refreshUser = async (idAddress, req, res, user) => {
+  const updatedUser = {
+  _id: req.params.id,
+  firstname: req.body.firstname,
+  lastname: req.body.lastname,
+  email: req.body.email,
+  password: user.password,
+  birth: req.body.birth,
+  address: idAddress}
+  await User.updateOne({ _id: req.params.id}, {...updatedUser})
+  .then(result => {
+  req.session.successUpdateUser = `
+  Utilisateur ${updatedUser.lastname} ${updatedUser.firstname} mis à jour avec succès.`;
+  res.redirect(`/users/${req.params.id}/update`);
+  }).catch(error => {
+  console.log(error.message)
+  console.log('utilisateur non mis à jour Address trouvé');
+  })}
+
+ exports.getUserById = async (req, res, next) => {
     try {
       const user = await User.findOne({ _id: req.params.id }).populate(
         "address"
@@ -79,7 +60,7 @@ const newUser = async (idAddress, req, res) => {
       console.error(error.message);
       res.status(500).send("Server Error");
     }
-  };
+ };
 
 exports.addUser = (req, res) => {
   const successCreateUser = req.session.successCreateUser
@@ -133,12 +114,13 @@ exports.createUser = (req, res) => {
 
 exports.getUsers = async (req, res, next) => {
   try {
+    const successDeleteUser = req.session.successDeleteUser ? req.session.successDeleteUser : null;
     const users = await User.find().populate("address");
     res
       .status(200)
       .render(
         path.join(__dirname, "../pages/management/users/list-users.ejs"),
-        { users }
+        { users, successDeleteUser }
       );
   } catch (error) {
     console.error(error.message);
@@ -151,21 +133,59 @@ exports.getUser = (req, res) => {
   res.status(200).render(path.join(__dirname, '../pages/management/users/detail-user.ejs'), { detailsUser})
 };
 
-exports.modifyUser = (req, res) => {
-  res
-    .status(200)
-    .render(path.join(__dirname, "../pages/management/users/update-users.ejs"));
-};
+exports.modifyUser = async (req, res, next) => {
+  const detailsUser = res.locals.detailsUser;
+  const successUpdateUser = req.session.successUpdateUser
+  ? req.session.successUpdateUser : null;
+  res.status(200).render(
+  path.join(__dirname, `../pages/management/users/update-users.ejs`),
+  { detailsUser, successUpdateUser });
+  };
 
-exports.updateUser = () => {};
+exports.updateUser = async (req, res) => { 
+  try {
+  verifInputs(req, res);
+    await findUserById(req.params.id).then(user => {findAddress(req).then(address => {
+      if(address) { refreshUser(address._id, req, res, user); }
+      else { createAddress(req).then(newAddress => {
+      refreshUser(newAddress.id, req, res, user);
+        })}
+      }).catch(error => {
+        res.status(404).send('Error Find Address' + error.message);
+      })
+    }).catch(error => {
+      res.status(404).send('Error Find User' + error.message);
+    })
+  }catch(error){
+    console.error(error.message);
+    res.status(500).send('Server Error controller');
+  }
+}
 
-exports.removeUser = (req, res) => {
-  res
-    .status(200)
-    .render(path.join(__dirname, "../pages/management/users/delete-users.ejs"));
-};
+exports.removeUser = async (req, res, next) => {
+  const detailsUser = res.locals.detailsUser;
+  res.status(200).render(
+  path.join(__dirname, `../pages/management/users/delete-users.ejs`),
+  {detailsUser}
+  )
+  }
 
-exports.deleteUser = () => {};
+exports.deleteUser = async (req, res) => {
+  try{
+    await findUserById(req.params.id).then(user => {
+    if(!user) {res.status(404).send('User not found');}
+    else {
+    user.deleteOne({_id: req.params.id}).then(() => {
+    req.session.successDeleteUser =
+    `Utilisateur ${user.lastname} ${user.firstname} supprimé avec succès.`;
+    res.redirect(`/users`);
+    }).catch(error => res.status(400).send('Error Delete User ' + error.message))
+    }
+    }).catch(error =>
+    res.status(400).send('Error Find User ' + error.message)
+    )
+    } catch(error) {res.status(404).send('Error delete' + error.message);}
+  };
 
 // équivaut a
 // module.exports = { createUser, getUsers, getUserById, updateUser, deleteUser}

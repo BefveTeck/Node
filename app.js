@@ -30,6 +30,9 @@ app.use((req, res, next) => {
 
 app.use(morgan('dev'));
 
+const methodOverride = require('method-override');
+app.use(methodOverride('_method'));
+
 const homeRoutes = require('./routes/home');
 app.use(homeRoutes); 
 

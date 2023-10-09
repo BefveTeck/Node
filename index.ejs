@@ -12,7 +12,14 @@
     <img src="images/téléchargement.jpeg" alt="" />
     <% if(hello === 'Bonjour') { %>
     <p><%= hello %> <%= year %></p>
+    <% } else { %>
+      <p> blabla </p>
     <% } %>
+
+    <%  if(userConnected) { %>
+      <p> <%= userConnected %> </p>
+      <% } %>
+    
     <!--  -->
   </body>
 </html>
